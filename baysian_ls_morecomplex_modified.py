@@ -46,33 +46,6 @@ def data_generation(n_radii,n_angles):
 
 
 
-def data_generation2(n_radii,n_angles):
-    
-    radii = np.linspace(0.125, 1.0, n_radii)
-    angles = np.linspace(0, 2*np.pi, n_angles, endpoint=False)[..., np.newaxis]
-    radii = radii[::2]
-    angles = angles[::2]
-    x = np.append(0, (radii*np.cos(angles)).flatten())
-    y = np.append(0, (radii*np.sin(angles)).flatten())
-
-    x_plot = x
-    y_plot = y
-
-    n = len(x) #number of sample
-    x = np.reshape(x,(n,1))
-    y = np.reshape(y,(n,1))
-
-    x = np.hstack((x,y))
-    y = np.sin(-x[:,0]*x[:,1]) + 0.05*np.random.rand(n)
-    z_plot = y
-
-    ax = plt.figure().add_subplot(projection='3d')
-
-    ax.plot_trisurf(x_plot, y_plot, z_plot, linewidth=0.2, antialiased=True)
-
-    plt.show()
-    return n,x,y, radii,angles,z_plot   
-
 def dimentioanl_mapping(n,m,x):
     D=np.empty((n,0))
 
@@ -114,6 +87,7 @@ def convex_solve(D,d,m,n,x,y):
  # --------------------------specify common parameters ------------------------------
 sigma = 1e-3
 eta = 1e-3
+#eta = eta**2
 m = 1000# dimension of D and hidden nodes
 lr = 0.01
 beta = 1e-10#1
@@ -122,22 +96,22 @@ percent_train = 0.7
 
 
 # ---------------------------------original data this set prediction is not good but works-------------------------------------- 
-np.random.seed(10)
-n=50
-d=3
-x=np.random.randn(n,d-1)
-x=np.append(x,np.ones((n,1)),axis=1)
+# np.random.seed(10)
+# n=50
+# d=3
+# x=np.random.randn(n,d-1)
+# x=np.append(x,np.ones((n,1)),axis=1)
 
-y=((np.linalg.norm(x[:,0:d-1],axis=1)>1)-0.5)*2
+# y=((np.linalg.norm(x[:,0:d-1],axis=1)>1)-0.5)*2
 
 # ---------------------------------complex three d data--------------------------------------
  
-# access data from data generation   
-# d = 2
-# np.random.seed(42)
-# n_radii = 8
-# n_angles = 36
-# n,x,y, radii,angles,z_plot = data_generation(n_radii,n_angles)
+#access data from data generation   
+d = 2
+np.random.seed(42)
+n_radii = 8
+n_angles = 36
+n,x,y, radii,angles,z_plot = data_generation(n_radii,n_angles)
 
 # ---------------------------------data split--------------------------------------
 
@@ -190,7 +164,7 @@ mean_values = []
 for i in range(int(n*percent_train)):
     mean_valuesi = mu.T@ThetaX_train[i,:]
     mean_values.append(mean_valuesi)
-    std_valuesi = np.sqrt(np.sqrt(ThetaX_train[i,:].T@Sigma@ThetaX_train[i,:] + sigma**2))
+    std_valuesi = np.sqrt(ThetaX_train[i,:].T@Sigma@ThetaX_train[i,:] + sigma**2)
     std_values.append(std_valuesi)
 
 std_values = np.reshape(std_values,(int(n*percent_train),1))
@@ -230,7 +204,7 @@ plt.plot(np.linspace(int(n*percent_train),n-1,n - int(n*percent_train)),mean_val
 plt.fill_between(np.linspace(int(n*percent_train),n-1,n - int(n*percent_train)),mean_values-3.0*std_values.T[0],mean_values+3.0*std_values.T[0],alpha=0.2,color='navy',label='99.7% confidence interval')
 plt.plot(y,'.',color='darkorange',markersize=4,label='Test set')
 plt.legend()
-plt.xlabel('x')
+plt.xlabel('data points')
 plt.ylabel('y')
 plt.show()
 
@@ -239,7 +213,7 @@ plt.plot(mean_values,color='navy',lw=3,label='Predicted Mean Model')
 plt.fill_between(np.linspace(0, len(mean_values)-1,len(mean_values)),mean_values-3.0*std_values.T[0],mean_values+3.0*std_values.T[0],alpha=0.2,color='navy',label='99.7% confidence interval')
 plt.plot(y_test,'.',color='darkorange',markersize=4,label='Test set')
 plt.legend()
-plt.xlabel('x')
+plt.xlabel('data points')
 plt.ylabel('y')
 plt.show()
 

@@ -50,27 +50,29 @@ lr=0.01
 beta = 1e-100
 sigma = 1e-3
 eta = 1e-3
-beta = 1e-10
+
+beta = sigma**2/eta**2
+eta = eta**2
 np.random.seed(42)
 d = 2
 percent_train = 0.7
 
 # ---------------------------------original data this set prediction is good-------------------------------------- 
-np.random.seed(10)
-n=50
-d=3
-x=np.random.randn(n,d-1)
-x=np.append(x,np.ones((n,1)),axis=1)
+# np.random.seed(10)
+# n=50
+# d=3
+# x=np.random.randn(n,d-1)
+# x=np.append(x,np.ones((n,1)),axis=1)
 
-y=((np.linalg.norm(x[:,0:d-1],axis=1)>1)-0.5)*2
+# y=((np.linalg.norm(x[:,0:d-1],axis=1)>1)-0.5)*2
 
 
 # ---------------------------------complex data set-------------------------------------- 
-# d = 2
-# np.random.seed(42)
-# n_radii = 8
-# n_angles = 36
-# n,x,y, radii,angles,z_plot = data_generation(n_radii,n_angles)
+d = 2
+np.random.seed(42)
+n_radii = 8
+n_angles = 36
+n,x,y, radii,angles,z_plot = data_generation(n_radii,n_angles)
 
 
 # ---------------------------------data split-------------------------------------- 
@@ -101,6 +103,8 @@ model = nn.Sequential(bnn.BayesLinear(prior_mu=0, prior_sigma=sigma, in_features
 
 optimizer = optim.Adam(model.parameters(), lr=lr)
 loss_fn = nn.MSELoss()
+kl_loss = bnn.BKLLoss(reduction='mean', last_layer_only=False)
+kl_weight = 0.01
 loss_plot = []
 for step in range(epochs):
     train_x = train_x.view(train_x.shape[0], -1)
@@ -110,12 +114,17 @@ for step in range(epochs):
     for param in model.parameters():
         l2_reg += torch.norm(param)
         
-    loss = loss_fn(output, train_y) + beta*l2_reg
+    loss = loss_fn(output, train_y) #+ beta*l2_reg
+    kl = kl_loss(model)
+    cost = loss + kl_weight*beta
     
     optimizer.zero_grad()
-    loss.backward()
+    cost.backward()
     optimizer.step()
-    loss_plot.append(loss.item())
+    loss_plot.append(cost.item())
+    plt.plot(loss_plot)
+    plt.xlabel('training epochs')
+    plt.ylabel('loss')
     print(step)
 
 models_result = np.array([model(train_x).data.numpy() for k in range(n)])
@@ -133,7 +142,7 @@ plt.plot(mean_values,color='navy',lw=3,label='Predicted Mean Model')
 plt.fill_between(np.linspace(0, len(mean_values)-1,len(mean_values)),mean_values-3.0*std_values,mean_values+3.0*std_values,alpha=0.2,color='navy',label='99.7% confidence interval')
 plt.plot(y,'.',color='darkorange',markersize=4,label='Test set')
 plt.legend()
-plt.xlabel('x')
+plt.xlabel('data points')
 plt.ylabel('y')
 plt.show()
     
@@ -163,7 +172,7 @@ plt.plot(np.linspace(int(n*percent_train),n-1,n - int(n*percent_train)),mean_val
 plt.fill_between(np.linspace(int(n*percent_train),n-1,n - int(n*percent_train)),mean_values-3.0*std_values,mean_values+3.0*std_values,alpha=0.2,color='navy',label='99.7% confidence interval')
 plt.plot(y,'.',color='darkorange',markersize=4,label='Test set')
 plt.legend()
-plt.xlabel('x')
+plt.xlabel('data points')
 plt.ylabel('y')
 plt.show()
     
