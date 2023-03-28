@@ -51,7 +51,7 @@ beta = 1e-100
 sigma = 1e-3
 eta = 1e-3
 
-beta = sigma**2/eta**2
+beta = sigma**2/eta**2 /2
 eta = eta**2
 np.random.seed(42)
 d = 2
@@ -112,11 +112,15 @@ for step in range(epochs):
     # https://stackoverflow.com/questions/42704283/l1-l2-regularization-in-pytorch
     l2_reg = torch.tensor(0.)
     for param in model.parameters():
-        l2_reg += torch.norm(param)
+        l2_reg += torch.norm(param)**2
         
-    loss = loss_fn(output, train_y) #+ beta*l2_reg
+   # loss = loss_fn(output, train_y) + beta*l2_reg
+   # kl = kl_loss(model)
+   # cost = loss #+ beta*kl
+    
+    loss = loss_fn(output, train_y)
     kl = kl_loss(model)
-    cost = loss + kl_weight*beta
+    cost = loss + 1e-8*l2_reg
     
     optimizer.zero_grad()
     cost.backward()
